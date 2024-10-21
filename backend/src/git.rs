@@ -76,20 +76,22 @@ impl Interface {
     #[tracing::instrument(skip(self))]
     pub fn get_doc_tree(&self) -> Result<INode> {
         fn recurse_tree(dir: &Path, node: &mut INode) -> Result<()> {
+            debug!("Loaded doc tree ----> {:?}", dir);
             for entry in fs::read_dir(dir)? {
                 let entry = entry?;
                 let path = entry.path();
                 let entry_name = entry.file_name().to_string_lossy().to_string();
-                // path is a directory, recurse over children
-                if path.is_dir() {
+                let metadata = path.metadata()?;
+                if metadata.is_dir() {
                     let mut inner_node = INode {
                         name: entry_name,
                         children: Vec::new(),
                     };
+
                     recurse_tree(&path, &mut inner_node)?;
                     node.children.push(inner_node);
-                } else {
-                    // path is a file, add to children
+
+                } else if metadata.is_file() {
                     node.children.push(INode {
                         name: entry_name,
                         children: Vec::new(),
