@@ -130,11 +130,12 @@ async fn main() -> Result<()> {
 async fn init_state(cli_args: &Args) -> Result<AppState> {
     let config: Arc<AppConf> = AppConf::load(&cli_args.cfg);
     
-    let repo_url = config.files.repo_url.clone();
+    let repo_url = config.git.repo_url.clone();
     let repo_path = config.files.repo_path.clone();
+    let repo_branch = config.git.remote_branch.clone();
     let docs_path = config.files.docs_path.clone();
     
-    let git = task::spawn(async { git::Interface::new(repo_url, repo_path, docs_path)}).await??;
+    let git = task::spawn(async { git::Interface::new(repo_url, repo_path, docs_path, repo_branch)}).await??;
     let reqwest_client = Client::new();
     
     let oauth = BasicClient::new(

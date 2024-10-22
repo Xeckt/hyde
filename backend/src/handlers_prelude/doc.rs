@@ -82,7 +82,7 @@ pub async fn put_doc_handler(
 
     match state
         .git
-        .put_doc(&state.config.files.repo_url, &body.path, &body.contents, &final_commit_message, &gh_token)
+        .put_doc(&state.config.git.repo_url, &body.path, &body.contents, &final_commit_message, &gh_token)
     {
         Ok(_) => Ok(StatusCode::CREATED),
         Err(e) => {
@@ -108,7 +108,7 @@ pub async fn delete_doc_handler(
     .await?;
 
     let gh_token = state.gh_credentials.get(&state.reqwest_client, &state.config.oauth.github.client_id).await.unwrap();
-    state.git.delete_doc(&state.config.files.docs_path, &state.config.files.repo_url, &query.path, &format!("{} deleted {}", author.username, query.path), &gh_token).map_err(eyre_to_axum_err)?;
+    state.git.delete_doc(&state.config.files.docs_path, &state.config.git.repo_url, &query.path, &format!("{} deleted {}", author.username, query.path), &gh_token).map_err(eyre_to_axum_err)?;
 
     Ok(StatusCode::NO_CONTENT)
 }

@@ -11,7 +11,7 @@ pub async fn github_hook_handler(State(state): State<AppState>, headers: HeaderM
     debug!("Received Github webhook event of type {event_type:?}");
     if event_type == "push" {
         info!("New changes pushed to Github, pulling changes...");
-        match state.git.pull() {
+        match state.git.pull(&state.config.git.remote_branch) {
             Ok(_) => {}
             Err(e) => {
                 error!("Failed to auto-pull changes with error: {e:?}");

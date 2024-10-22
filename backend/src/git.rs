@@ -36,10 +36,10 @@ impl Interface {
     /// # Errors
     /// This function will return an error if any of the git initialization steps fail, or if
     /// the required environment variables are not set.
-    pub fn new(repo_url: String, repo_path: String, docs_path: String) -> Result<Self> {
+    pub fn new(repo_url: String, repo_path: String, docs_path: String, branch: String) -> Result<Self> {
         let mut doc_path = PathBuf::from(&repo_path);
         doc_path.push(docs_path);
-        let repo = Self::load_repository(&repo_url, &repo_path)?;
+        let repo = Self::load_repository(&repo_url, &repo_path, &branch)?;
         Ok(Self {
             repo: Arc::new(Mutex::new(repo)),
             doc_path,
@@ -209,10 +209,10 @@ impl Interface {
     /// If the repository at the provided path exists, open it and fetch the latest changes from the `master` branch.
     /// If not, clone into the provided path.
     #[tracing::instrument]
-    fn load_repository(repo_url: &str, repo_path: &str) -> Result<Repository> {
+    fn load_repository(repo_url: &str, repo_path: &str, branch: &str) -> Result<Repository> {
         if let Ok(repo) = Repository::open(repo_path) {
             info!("Existing repository detected, fetching latest changes");
-            Self::git_pull(&repo)?;
+            Self::git_pull(&repo, branch)?;
             return Ok(repo);
         }
 
@@ -231,33 +231,31 @@ impl Interface {
     pub fn reclone(&self, repo_url: &str, repo_path: &str) -> Result<()> {
         let r_path = Path::new(repo_path);
         let temp = r_path.with_extension("temp");
-
-        {
-            info!("Locking repository");
-            let mut guard = self.repo.lock().unwrap();
-            info!("Cloning repository: {}", repo_url);
-            match Repository::clone(&repo_url, &temp) {
-                Ok(repo) => {
-                    info!("Successfully cloned repository");
-                    *guard = repo;
-                    info!("Replacing with new repository");
-                    fs::remove_dir_all(r_path)?;
-                    fs::rename(temp, r_path)?;
-                    *guard = Repository::open(r_path)?;
-                    Ok(())
-                }
-                Err(e) => {
-                    info!("Clone failed!");
-                    Err(e.into())
-                }
+        info!("Locking repository");
+        let mut guard = self.repo.lock().unwrap();
+        info!("Cloning repository: {}", repo_url);
+        match Repository::clone(repo_url, &temp) {
+            Ok(repo) => {
+                info!("Successfully cloned repository");
+                *guard = repo;
+                info!("Replacing with new repository");
+                fs::remove_dir_all(r_path)?;
+                fs::rename(temp, r_path)?;
+                *guard = Repository::open(r_path)?;
+                drop(guard);
+                Ok(())
+            }
+            Err(e) => {
+                info!("Clone failed!");
+                Err(e.into())
             }
         }
     }
 
     /// Pull changes from upstream
-    pub fn pull(&self) -> Result<()> {
+    pub fn pull(&self, branch: &str) -> Result<()> {
         let guard = self.repo.lock().unwrap();
-        Self::git_pull(&guard)
+        Self::git_pull(&guard, branch)
     }
 
     /// A code level re-implementation of `git add`.
@@ -337,12 +335,11 @@ impl Interface {
     ///
     /// Under the hood, `git pull` is shorthand for `git fetch`, followed by `git merge FETCH_HEAD`,
     /// where`FETCH_HEAD` is a reference to the latest commit that has just been fetched from the remote repository.
-    fn git_pull(repo: &Repository) -> Result<()> {
+    fn git_pull(repo: &Repository, branch: &str) -> Result<()> {
         // https://github.com/rust-lang/git2-rs/blob/master/examples/pull.rs
-        // TODO: configure branch via environment variables
         let fetch_head = Self::git_fetch(repo)?;
         info!("Successfully fetched latest changes, merging...");
-        Self::git_merge(repo, "master", fetch_head)?;
+        Self::git_merge(repo, branch, fetch_head)?;
         info!("Successfully merged latest changes");
         Ok(())
     }

@@ -8,6 +8,7 @@ use tracing::{info, error, trace};
 pub struct AppConf {
     pub files: Files,
     pub discord: Discord,
+    pub git: Git,
     pub oauth: OAuth,
     pub database: Database,
 }
@@ -17,12 +18,17 @@ pub struct Files {
     pub asset_path: String,
     pub docs_path: String,
     pub repo_path: String,
-    pub repo_url: String,
 }
 
 #[derive(Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 pub struct Discord {
     pub admin_username: String,
+}
+
+#[derive(Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+pub struct Git {
+    pub remote_branch: String,
+    pub repo_url: String,
 }
 
 #[derive(Deserialize, Debug, Clone, Default, PartialEq, Eq)]
@@ -74,8 +80,9 @@ macro_rules! impl_validate {
     };
 }
 
-impl_validate!(Files, asset_path, docs_path, repo_path, repo_url);
+impl_validate!(Files, asset_path, docs_path, repo_path);
 impl_validate!(Discord, admin_username);
+impl_validate!(Git, remote_branch, repo_url);
 impl_validate!(DiscordOAuth, client_id, secret, url, token_url);
 impl_validate!(GitHubOAuth, client_id);
 impl_validate!(Database, url);
@@ -92,6 +99,7 @@ impl ValidateFields for AppConf {
     fn validate(&self, path: &str) -> Result<(), String> {
         self.files.validate(&format!("{}.files", path))?;
         self.discord.validate(&format!("{}.discord", path))?;
+        self.git.validate(&format!("{}.github", path))?;
         self.oauth.validate(&format!("{}.oauth", path))?;
         self.database.validate(&format!("{}.database", path))?;
         Ok(())
