@@ -47,12 +47,7 @@
 		const commitMessage = commitMessageInput.trim();
 
 		if (!(await hasChanges())) {
-			addToast({
-				message: `No changes detected to commit.`,
-				type: ToastType.Error,
-				timeout: 1000,
-				dismissible: true
-			});
+			addToast(`No changes detected to commit.`, ToastType.Error, true, 1000);
 			return;
 		}
 
@@ -63,34 +58,24 @@
 	interface Props {
 		previewWindow: HTMLElement;
 		saveChangesHandler: (commitMessage: string) => Promise<void>;
-		createPullRequestHandler: () => Promise<void>;
 	}
 
-	let {
-		previewWindow = $bindable(),
-		saveChangesHandler = $bindable(),
-		createPullRequestHandler = $bindable()
-	}: Props = $props();
+	let { previewWindow = $bindable(), saveChangesHandler = $bindable() }: Props = $props();
 
 	async function cancelChangesHandler() {
 		if ($editorText !== get(currentFile)) {
 			$editorText =
 				(await cache.get(get(currentFile))) ??
 				"The current file doesn't exist in cache, please report to the developer";
-			addToast({
-				message: `Cancelled edits to "${get(currentFile)}""`,
-				type: ToastType.Success,
-				timeout: 1000,
-				dismissible: true
-			});
+			addToast(`Cancelled edits to "${get(currentFile)}""`, ToastType.Success, true, 1000);
 		} else {
 			// TODO: The button should actually be disabled when there are no unsaved changes
-			addToast({
-				message: `There are no unsaved changes to "${get(currentFile)}""`,
-				type: ToastType.Error,
-				timeout: 1000,
-				dismissible: true
-			});
+			addToast(
+				`There are no unsaved changes to "${get(currentFile)}""`,
+				ToastType.Error,
+				true,
+				1000
+			);
 		}
 	}
 
@@ -144,24 +129,6 @@
 			<title>Publish Changes</title>
 			<path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z" />
 		</svg>
-	</button>
-	<!-- Pull Request -->
-	<button onclick={createPullRequestHandler} class="pull-request" title="Create Pull Request">
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="25px"
-			height="25px"
-			viewBox="0 0 24 24"
-			fill="none"
-		>
-			<path
-				fill-rule="evenodd"
-				clip-rule="evenodd"
-				d="M14.7071 2.70711L13.4142 4H14C17.3137 4 20 6.68629 20 10V16.1707C21.1652 16.5825 22 17.6938 22 19C22 20.6569 20.6569 22 19 22C17.3431 22 16 20.6569 16 19C16 17.6938 16.8348 16.5825 18 16.1707V10C18 7.79086 16.2091 6 14 6H13.4142L14.7071 7.29289C15.0976 7.68342 15.0976 8.31658 14.7071 8.70711C14.3166 9.09763 13.6834 9.09763 13.2929 8.70711L10.2929 5.70711C9.90237 5.31658 9.90237 4.68342 10.2929 4.29289L13.2929 1.29289C13.6834 0.902369 14.3166 0.902369 14.7071 1.29289C15.0976 1.68342 15.0976 2.31658 14.7071 2.70711ZM18 19C18 18.4477 18.4477 18 19 18C19.5523 18 20 18.4477 20 19C20 19.5523 19.5523 20 19 20C18.4477 20 18 19.5523 18 19ZM6 4C5.44772 4 5 4.44772 5 5C5 5.55228 5.44772 6 6 6C6.55228 6 7 5.55228 7 5C7 4.44772 6.55228 4 6 4ZM7 7.82929C8.16519 7.41746 9 6.30622 9 5C9 3.34315 7.65685 2 6 2C4.34315 2 3 3.34315 3 5C3 6.30622 3.83481 7.41746 5 7.82929V16.1707C3.83481 16.5825 3 17.6938 3 19C3 20.6569 4.34315 22 6 22C7.65685 22 9 20.6569 9 19C9 17.6938 8.16519 16.5825 7 16.1707V7.82929ZM6 18C5.44772 18 5 18.4477 5 19C5 19.5523 5.44772 20 6 20C6.55228 20 7 19.5523 7 19C7 18.4477 6.55228 18 6 18Z"
-				fill="#000000"
-			/>
-		</svg>
-		<span>Create Pull Request</span>
 	</button>
 </div>
 <div class="editor-panes">
@@ -229,7 +196,7 @@
 <style>
 	.editor-controls {
 		padding-right: 0.5rem;
-		margin: 0.2rem, 0;
+		margin: 0.2rem 0;
 		border-bottom: 0.07rem var(--foreground-4) solid;
 		display: flex;
 		justify-content: right;
@@ -239,7 +206,7 @@
 		border-radius: 0.2rem;
 		fill: var(--foreground-4);
 		float: right;
-		flex-direction: vertical;
+		flex-direction: column;
 		cursor: pointer;
 	}
 

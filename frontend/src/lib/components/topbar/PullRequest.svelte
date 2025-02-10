@@ -69,34 +69,18 @@
 		// Check if the response is successful (status code 2xx)
 		if (!response.ok) {
 			const errorMessage = `Failed to fetch open issues. (Code ${response.status}: "${response.statusText}")`;
-			addToast({
-				message: errorMessage,
-				type: ToastType.Error,
-				dismissible: true
-			});
+			addToast(errorMessage, ToastType.Error);
 			return;
 		}
 
 		// Parse the response as JSON
 		const responseData = await response.json();
+		const issues = responseData.issues ?? [];
 
-		// Validate the response structure
-		if (responseData.status === 'success' && Array.isArray(responseData.data?.issues)) {
-			const issuesOnly = responseData.data.issues.filter((issue: Issue) => !issue.pull_request);
-			const pullRequestsOnly = responseData.data.issues.filter(
-				(issue: Issue) => issue.pull_request
-			);
-			openIssues = issuesOnly;
-			openPullRequests = pullRequestsOnly;
-		} else {
-			// Handle unexpected response structure
-			const errorMessage = `Unexpected response structure: ${JSON.stringify(responseData)}`;
-			addToast({
-				message: errorMessage,
-				type: ToastType.Error,
-				dismissible: true
-			});
-		}
+		const issuesOnly = issues.filter((issue: Issue) => !issue.pull_request);
+		const pullRequestsOnly = issues.filter((issue: Issue) => issue.pull_request);
+		openIssues = issuesOnly;
+		openPullRequests = pullRequestsOnly;
 	}
 
 	async function createPullRequest(): Promise<void> {
@@ -125,33 +109,26 @@
 		// Handle the response
 		if (!response.ok) {
 			const errorMessage = `Failed to create pull request (Code ${response.status}: "${response.statusText}")`;
-			addToast({
-				message: `Error: ${errorMessage}`,
-				type: ToastType.Error,
-				dismissible: true
-			});
+			addToast(`Error: ${errorMessage}`, ToastType.Error);
 			return;
 		}
 
 		// Parse the JSON response to get the pull request URL
 		const jsonResponse = await response.json();
-		const pullRequestUrl = jsonResponse.data?.pull_request_url;
+		const pullRequestUrl = jsonResponse.pull_request_url;
 
 		if (pullRequestUrl) {
 			// If successful, show success toast with the URL
-			addToast({
-				message: `Pull request created successfully. View it [here](${pullRequestUrl}).`,
-				type: ToastType.Success,
-				dismissible: true,
-				timeout: 3600
-			});
+			addToast(
+				`Pull request created successfully. View it here: ${pullRequestUrl}`,
+				ToastType.Success
+			);
 		} else {
 			// Handle the case where the URL is not present (if needed)
-			addToast({
-				message: 'Pull request created successfully, but the URL is not available.',
-				type: ToastType.Warning,
-				dismissible: true
-			});
+			addToast(
+				'Pull request created successfully, but the URL is not available.',
+				ToastType.Warning
+			);
 		}
 		showLoadingIcon = false;
 		closeModal();
@@ -184,42 +161,30 @@
 			// Handle the response
 			if (!response.ok) {
 				const errorMessage = `Failed to update pull request (Code ${response.status}: "${response.statusText}")`;
-				addToast({
-					message: `Error: ${errorMessage}`,
-					type: ToastType.Error,
-					dismissible: true
-				});
+				addToast(`Error: ${errorMessage}`, ToastType.Error, true);
 				showLoadingIcon = false;
 				return;
 			}
 
 			// Parse the JSON response to get the updated pull request URL or other details
-			const jsonResponse = await response.json();
-			const pullRequestUrl = jsonResponse.data;
+			const pullRequestUrl = await response.json();
 
 			if (pullRequestUrl) {
 				// If successful, show success toast with the URL
-				addToast({
-					message: `Pull request updated successfully. View it [here](${pullRequestUrl}).`,
-					type: ToastType.Success,
-					dismissible: true,
-					timeout: 3600
-				});
+				addToast(
+					`Pull request updated successfully. View it here: ${pullRequestUrl}`,
+					ToastType.Success
+				);
 			} else {
 				// Handle the case where the URL is not present (if needed)
-				addToast({
-					message: 'Pull request updated successfully, but the URL is not available.',
-					type: ToastType.Warning,
-					dismissible: true
-				});
+				addToast(
+					'Pull request updated successfully, but the URL is not available.',
+					ToastType.Warning
+				);
 			}
 		} else {
 			// If the user is not an admin and not the PR author, deny deletion
-			addToast({
-				message: 'Error: You are not authorized to delete this pull request.',
-				type: ToastType.Error,
-				dismissible: true
-			});
+			addToast(`Error: You are not authorized to delete this pull request.`, ToastType.Error);
 			return;
 		}
 		showLoadingIcon = false;
@@ -238,37 +203,17 @@
 
 			if (!response.ok) {
 				const errorMessage = `Failed to delete close request (Code ${response.status}: "${response.statusText}")`;
-				addToast({
-					message: `Error: ${errorMessage}`,
-					type: ToastType.Error,
-					dismissible: true
-				});
+				addToast(`Error: ${errorMessage}`, ToastType.Error);
 				showLoadingIcon = false;
 				return;
 			}
 
 			const jsonResponse = await response.json();
-
-			addToast({
-				message:
-					jsonResponse.status === 'success'
-						? 'Pull request closed successfully.'
-						: 'Failed to close the pull request.',
-				type: jsonResponse.status === 'success' ? ToastType.Success : ToastType.Error,
-				dismissible: true,
-				timeout: jsonResponse.status === 'success' ? 3600 : undefined
-			});
-
-			if (jsonResponse.status === 'success') {
-				closeModal();
-			}
+			addToast(jsonResponse, ToastType.Success);
+			closeModal();
 		} else {
 			// If the user is not an admin and not the PR author, deny deletion
-			addToast({
-				message: 'Error: You are not authorized to close this pull request.',
-				type: ToastType.Error,
-				dismissible: true
-			});
+			addToast('Error: You are not authorized to close this pull request.', ToastType.Error);
 			return;
 		}
 
@@ -547,7 +492,6 @@
 		display: flex;
 		width: 100%;
 		flex-direction: row;
-		align-content: bottom;
 		background: none;
 		border: none;
 		font-size: 1rem;

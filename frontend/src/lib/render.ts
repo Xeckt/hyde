@@ -57,11 +57,10 @@ export function stripFrontMatter(input: TokensList) {
 	const frontMatterNode = input.shift();
 	if (
 		frontMatterNode !== undefined &&
-		frontMatterNode.type === 'heading' &&
+		frontMatterNode.type === 'paragraph' &&
 		frontMatterNode.raw.includes('title: ')
 	) {
-		// The output of this process will contain the serialized frontmatter header
-		frontMatterNode['raw'].replace('---\n', '\n').trim();
+		input.shift();
 		// Hide the toast if a header was detected and it's being displayed
 		if (toastId !== -1) {
 			dismissToast(toastId);
@@ -71,12 +70,11 @@ export function stripFrontMatter(input: TokensList) {
 		if (get(currentFile) !== '') {
 			// -1 means the toast isn't displayed
 			if (toastId === -1) {
-				toastId = addToast({
-					message:
-						'No valid frontmatter header was found, please ensure all documents have a frontmatter header',
-					type: ToastType.Error,
-					dismissible: false
-				});
+				toastId = addToast(
+					'No valid frontmatter header was found, please ensure all documents have a frontmatter header',
+					ToastType.Error,
+					false
+				);
 			}
 		}
 	}

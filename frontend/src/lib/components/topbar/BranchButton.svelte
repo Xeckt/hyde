@@ -46,7 +46,7 @@
 	 *   }
 	 * }
 	 */
-	async function fetchExistingBranches(): Promise<Branch[]> {
+	async function fetchExistingBranches() {
 		const response = await fetch(`${apiAddress}/api/branches`, {
 			method: 'GET',
 			credentials: 'include',
@@ -59,21 +59,19 @@
 		if (!response.ok) {
 			const errorMessage = await response.json();
 			console.error('Failed to fetch branches:', errorMessage);
-			addToast({
-				message: `Error fetching branches: ${response.statusText}. ${JSON.stringify(errorMessage)}`,
-				type: ToastType.Error,
-				dismissible: true
-			});
+			addToast(
+				`Error fetching branches: ${response.statusText}. ${JSON.stringify(errorMessage)}`,
+				ToastType.Error
+			);
 			return [];
 		}
 
 		const data = await response.json();
-		return (
-			data.data?.branches?.map((branch: string) => ({
-				name: branch.split(' (')[0],
-				isProtected: branch.includes('(protected)')
-			})) ?? []
-		);
+		const formattedBranches: Branch[] = data.branches.map((branch: string) => ({
+			name: branch.replace(' (protected)', ''),
+			isProtected: branch.includes('(protected)')
+		}));
+		allBranches.set(formattedBranches);
 	}
 
 	async function fetchDefaultBranch() {
@@ -81,10 +79,8 @@
 
 		if (response.ok) {
 			const data = await response.json();
-			const defaultBranch = data.data;
-
 			// Set the default branch to the baseBranch store
-			baseBranch.set(defaultBranch);
+			baseBranch.set(data);
 		} else {
 			console.error('Failed to fetch default branch:', response.statusText);
 		}
@@ -96,8 +92,7 @@
 
 			if (response.ok) {
 				const data = await response.json();
-				const currentBranch = data.data;
-				branchName.set(currentBranch);
+				branchName.set(data);
 			} else {
 				console.error('Failed to fetch current branch:', response.statusText);
 			}
@@ -109,8 +104,7 @@
 	onMount(async () => {
 		fetchDefaultBranch();
 		fetchCurrentBranch();
-		const branches = await fetchExistingBranches();
-		allBranches.set(branches);
+		await fetchExistingBranches();
 	});
 
 	async function setBranchName(input: string) {
@@ -141,22 +135,20 @@
 
 		// Validate branch name
 		if (!isValidBranchName(input)) {
-			addToast({
-				message: 'Please ensure your branch name follows these rules:\n' + rules.join('\n'),
-				type: ToastType.Warning,
-				dismissible: true
-			});
+			addToast(
+				'Please ensure your branch name follows these rules:\n' + rules.join('\n'),
+				ToastType.Warning
+			);
 			return;
 		}
 
 		if ($allBranches.some((branch) => branch.name === input && branch.isProtected)) {
-			addToast({
-				message:
-					'Please select an existing branch name from the list of non-protected branches.\nYou can also create your own.',
-				type: ToastType.Warning,
-				dismissible: true,
-				timeout: 1800
-			});
+			addToast(
+				'Please select an existing branch name from the list of non-protected branches.\nYou can also create your own.',
+				ToastType.Warning,
+				true,
+				1800
+			);
 			return;
 		}
 
@@ -168,12 +160,7 @@
 		showMenu = false;
 
 		if (!$allBranches.some((branch) => branch.name === input)) {
-			addToast({
-				message: `Now working on a new branch: "${input}".`,
-				type: ToastType.Success,
-				dismissible: true,
-				timeout: 1800
-			});
+			addToast(`Now working on a new branch: "${input}".`, ToastType.Success, true, 1800);
 			showLoadingIcon = false;
 			return;
 		}
@@ -185,11 +172,10 @@
 		});
 
 		if (!response.ok) {
-			addToast({
-				message: `Failed to check out branch. Error ${response.status}: ${response.statusText}`,
-				type: ToastType.Error,
-				dismissible: true
-			});
+			addToast(
+				`Failed to check out branch. Error ${response.status}: ${response.statusText}`,
+				ToastType.Error
+			);
 			showLoadingIcon = false;
 			return;
 		}
@@ -201,18 +187,14 @@
 		});
 
 		if (pullResponse.ok) {
-			addToast({
-				message: `Branch "${input}" checked out and updated successfully.`,
-				type: ToastType.Success,
-				dismissible: true,
-				timeout: 1200
-			});
+			addToast(
+				`Branch "${input}" checked out and updated successfully.`,
+				ToastType.Success,
+				true,
+				1200
+			);
 		} else {
-			addToast({
-				message: `Failed to pull latest changes for branch "${input}".`,
-				type: ToastType.Error,
-				dismissible: true
-			});
+			addToast(`Failed to pull latest changes for branch "${input}".`, ToastType.Error);
 			showLoadingIcon = false;
 			return;
 		}

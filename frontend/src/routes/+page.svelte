@@ -73,11 +73,11 @@
 		const branch = $allBranches.find((b) => b.name === $branchName);
 
 		if (branch && branch.isProtected) {
-			addToast({
-				message: `The branch '${$branchName}' is protected and cannot be modified.`,
-				type: ToastType.Warning,
-				dismissible: true
-			});
+			addToast(
+				`The branch '${$branchName}' is protected and cannot be modified.`,
+				ToastType.Warning,
+				true
+			);
 			showLoadingIcon = false; // Ensure loading icon is hidden
 			return;
 		}
@@ -99,19 +99,14 @@
 		cache.flush();
 		switch (response.status) {
 			case 201:
-				addToast({
-					message: 'Changes synced successfully.',
-					type: ToastType.Success,
-					dismissible: true,
-					timeout: 3000
-				});
+				addToast('Changes synced successfully.', ToastType.Success);
 				break;
 			default:
-				addToast({
-					message: `An error was encountered syncing changes, please report to the developer (Code ${response.status}: "${response.statusText}").`,
-					type: ToastType.Error,
-					dismissible: true
-				});
+				addToast(
+					`An error was encountered syncing changes, please report to the developer (Code ${response.status}: "${response.statusText}").`,
+					ToastType.Error,
+					true
+				);
 		}
 	});
 
@@ -135,11 +130,11 @@
 	onMount(async () => {
 		// Check to see if the username cookie exists, it's got the same expiration time as the auth token but is visible to the frontend
 		if (!document.cookie.includes('username')) {
-			addToast({
-				message: 'You need to be logged in to access this page, redirecting...',
-				type: ToastType.Error,
-				dismissible: false
-			});
+			addToast(
+				'You need to be logged in to access this page, redirecting...',
+				ToastType.Error,
+				false
+			);
 			setTimeout(() => {
 				// TODO: When .html stripping middleware is complete, change this to always redirect to /login`
 				if (dev) {
@@ -153,11 +148,7 @@
 		const loginResponse = await fetch(`${apiAddress}/api/users/me`, { credentials: 'include' });
 		// Unauthorized, need to login
 		if (loginResponse.status === 401) {
-			addToast({
-				message: 'Your login has expired, redirecting...',
-				type: ToastType.Error,
-				dismissible: false
-			});
+			addToast('Your login has expired, redirecting...', ToastType.Error, false);
 			setTimeout(() => {
 				// TODO: When .html stripping middleware is complete, change this to always redirect to /login`
 				if (dev) {
@@ -177,57 +168,6 @@
 				showEditor = true;
 			}
 		});
-	});
-
-	let createPullRequestHandler = $state(async (): Promise<void> => {
-		const title = `Pull request for ${$currentFile}`;
-		const description = `This pull request contains changes made by ${$me.username}.`;
-		const headBranch = $branchName;
-
-		const response = await fetch(`${apiAddress}/api/pulls`, {
-			method: 'POST',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				head_branch: headBranch,
-				base_branch: 'master',
-				title: title,
-				description: description
-			})
-		});
-
-		// Handle the response
-		if (!response.ok) {
-			const errorMessage = `Failed to create pull request (Code ${response.status}: "${response.statusText}")`;
-			addToast({
-				message: `Error: ${errorMessage}`,
-				type: ToastType.Error,
-				dismissible: true
-			});
-			return; // Exit the function early on error
-		}
-
-		// Parse the JSON response to get the pull request URL
-		const jsonResponse = await response.json();
-		const pullRequestUrl = jsonResponse.data?.pull_request_url; // Adjusted based on API response
-
-		if (pullRequestUrl) {
-			// If successful, show success toast with the URL
-			addToast({
-				message: `Pull request created successfully. View it [here](${pullRequestUrl}).`,
-				type: ToastType.Success,
-				dismissible: true
-			});
-		} else {
-			// Handle the case where the URL is not present (if needed)
-			addToast({
-				message: 'Pull request created successfully, but the URL is not available.',
-				type: ToastType.Warning,
-				dismissible: true
-			});
-		}
 	});
 </script>
 
@@ -273,11 +213,7 @@
 		/>
 		{#if mode === SelectedMode.Documents}
 			{#if showEditor && $currentFile !== ''}
-				<DocumentEditor
-					bind:saveChangesHandler
-					bind:previewWindow={previewWindow!}
-					bind:createPullRequestHandler
-				/>
+				<DocumentEditor bind:saveChangesHandler bind:previewWindow={previewWindow!} />
 			{:else}
 				<span class="nofile-placeholder">
 					<p>
